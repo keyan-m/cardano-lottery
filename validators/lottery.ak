@@ -58,27 +58,24 @@ validator lottery {
         expect
           list.any(inputs, fn(input) { input.output_reference == spent_utxo })?
 
-        let lottery_id = spent_utxo |> cbor.serialise |> sha2_256
-
         // Only a single NFT must be minted, such that its name equals hash of
         // the spent UTxO's output reference.
+        let lottery_id = spent_utxo |> cbor.serialise |> sha2_256
         expect (mint_name == lottery_id)?
         expect (mint_quantity == 1)?
 
         // First produced UTxO must be at the script address, containing the
         // minted NFT.
-        let own_script = Script(own_policy)
         expect [
           Output {
-            datum: InlineDatum(lottery_info_datum_data),
+            address: lottery_info_address,
             value: lottery_info_value,
+            datum: InlineDatum(lottery_info_datum_data),
             ..
           },
-        ] =
-          list.filter(
-            outputs,
-            fn(output) { output.address.payment_credential == own_script },
-          )
+          ..
+        ] = outputs
+        expect (lottery_info_address.payment_credential == Script(own_policy))?
 
         // The datum must contain all information of the lottery. `agent` is
         // free to set them as desired.
