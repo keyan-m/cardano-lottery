@@ -3,7 +3,7 @@
 A decentralized and trust-less lottery contract on Cardano, leveraging the
 randomness of the proof-of-work token, [Fortuna](https://minefortuna.com/).
 
-## How it works?
+## How does it work?
 
 1. An "agent" starts a lottery, specifying a few values:
    - A time range for capturing Fortuna block hashes
