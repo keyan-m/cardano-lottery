@@ -39,5 +39,6 @@ randomness of the proof-of-work token, [Fortuna](https://minefortuna.com/).
 8. Merkle root of remaining unburnt tickets is preserved so that participants
    can burn their tickets if they wanted to
 
-While an agent is probably not required, it is implemented here so that all the
-Fortuna contributors can be rewarded for their works.
+While an agent may not be required, it is implemented here so that all the
+Fortuna contributors (from original authors to miner developers) can be rewarded
+for their works.
