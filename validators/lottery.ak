@@ -6,7 +6,7 @@ use cardano/assets.{PolicyId}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction,
 }
-use cardano_lottery/utils
+use cardano_lottery/utils.{MerkleRoot}
 
 pub type PubKeyHash =
   VerificationKeyHash
@@ -14,7 +14,6 @@ pub type PubKeyHash =
 pub type Lottery {
   // Head of the linked list
   Info {
-    agent: ByteArray,
     commission_percentage_numerator: Int,
     ticket_price: Int,
     draw_time_start: Int,
@@ -25,31 +24,27 @@ pub type Lottery {
   Ticket { next_ticket: Option<ByteArray> }
   // Folding progress UTxO
   Folding {
-    agent: ByteArray,
     commission_percentage_numerator: Int,
     fortuna_hash: ByteArray,
-    // MPF root
-    collected_tickets_so_far: ByteArray,
+    collected_tickets_so_far: MerkleRoot,
     next_ticket: ByteArray,
   }
   // Result of the last fold (no need to preserve agent and commision info, as
   // they must be paid in the last fold tx)
   Reward {
     winner_ticket: ByteArray,
-    // MPF root
-    all_tickets: ByteArray
+    all_tickets: MerkleRoot
   }
-  // Holding on to the list of minted tokens so that users can burn their
-  // expired tickets
+  // Holding on to the list of minted NFTs so that users can burn their expired
+  // tickets
   Concluded {
-    // MPF root
-    unburnt_tickets: ByteArray
+    unburnt_tickets: MerkleRoot
   }
 }
 
 pub type SpendAction {
   AppendTicket
-  StartFold { lottery_info_input_index: Int }
+  StartFold { lottery_info_input_index: Int, fortuna_reference_input_index: Int }
   ContinueFold { fold_progress_input_index: Int, next_ticket_input_index: Int }
   CollectPrize
   RemoveTicket
@@ -73,24 +68,27 @@ validator lottery {
     ] = mint |> assets.flatten
 
     // Execution of this endpoint already implies that both these policies
-    // equal `own_policy`.
+    // equal `own_policy`
     expect (ref_mint_policy == user_mint_policy)?
 
     when action is {
       Initiate { spent_utxo } -> {
         // {{{
-        // To enforce uniqueness of lottery ID, specified UTxO must be spent.
+        // To enforce uniqueness of lottery ID, specified UTxO must be spent
         utxo_is_spent(inputs, spent_utxo)
 
         // Exactly 2 NFTs must be minted, such that they are equal to each other
-        // in compliance with CIP-67.
+        // in compliance with CIP-67
         let Pair(ref_lottery_id, user_lottery_id) = id_from_out_ref(spent_utxo)
-        expect (mint_name == lottery_id)?
-        expect (mint_quantity == 1)?
+        expect and {
+          ref_mint_name == ref_lottery_id,
+          user_mint_name == user_lottery_id,
+        }?
 
         // First produced UTxO must be at the script address, containing the
         // minted NFT, second UTxO must be outside this contract, containing the
-        // 222 token for agent.
+        // `222` NFT for agent (used for verification in folding and commission
+        // collection)
         expect [
           Output {
             address: lottery_info_address,
@@ -106,18 +104,18 @@ validator lottery {
           ..
         ] = outputs
 
-        // List head (i.e. lottery info) UTxO must contain only one other asset
-        // apart from Lovelaces. And second produced UTxO must contain agent's
-        // corresponding NFT (used for verification in folding and commission
-        // collection).
+        // List head (i.e. lottery info) UTxO must contain only one NFT apart
+        // from Lovelaces
         expect (info_beacon_symbol, info_beacon_name, 1) =
           utils.get_single_asset_from_value_apart_from_ada(lottery_info_value)
-        let agent_nft_qty =
+        // Agent's UTxO must contain corresponding `222` NFT
+        expect 1 =
           assets.quantity_of(agent_value, own_policy, user_lottery_id)
 
-        // The datum must contain all information of the lottery. `agent` is
-        // free to set them as desired.
-        expect Info { agent, first_ticket, .. }: Lottery = lottery_info_datum_data
+        // The datum must contain all information of the lottery. Initiator
+        // (presumably agent) is free to set them as desired. Only
+        // `first_ticket` has to be set to `None`
+        expect Info { first_ticket: None, .. }: Lottery = lottery_info_datum_data
 
         let own_script = Script(own_policy)
         expect and {
@@ -125,9 +123,6 @@ validator lottery {
           !(agent_address.payment_credential == own_script),
           info_beacon_symbol == own_policy,
           info_beacon_name == ref_lottery_id,
-          agent_nft_qty == 1,
-          agent == user_lottery_id,
-          first_ticket == None,
         }?
       }
       // }}}

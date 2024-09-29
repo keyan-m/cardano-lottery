@@ -3,6 +3,8 @@ use aiken/primitive/bytearray
 use cardano/assets.{AssetName, PolicyId, Value}
 use cardano/transaction.{Input, Output, OutputReference}
 
+pub type MerkleRoot = ByteArray
+
 pub const cip67_ref_label = #"000643b0"
 
 pub const cip67_user_label = #"000de140"
