@@ -25,15 +25,17 @@ pub type Lottery {
   // Folding progress UTxO
   Folding {
     commission_percentage_numerator: Int,
-    fortuna_hash: ByteArray,
+    fortuna_hashes: List<ByteArray>,
+    draw_time_start: Int,
+    draw_time_end: Int,
     collected_tickets_so_far: MerkleRoot,
     next_ticket: ByteArray,
   }
   // Result of the last fold (no need to preserve agent and commision info, as
   // they must be paid in the last fold tx)
   Reward {
-    winner_ticket: ByteArray,
-    all_tickets: MerkleRoot
+    winner_tickets: List<ByteArray>,
+    unburnt_tickets: MerkleRoot
   }
   // Holding on to the list of minted NFTs so that users can burn their expired
   // tickets
@@ -45,6 +47,7 @@ pub type Lottery {
 pub type SpendAction {
   AppendTicket
   StartFold { lottery_info_input_index: Int, fortuna_reference_input_index: Int }
+  AddFortunaHash { folding_input_index: Int, fortuna_reference_input_index: Int }
   ContinueFold { fold_progress_input_index: Int, next_ticket_input_index: Int }
   CollectPrize
   RemoveTicket
