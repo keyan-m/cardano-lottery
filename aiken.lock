@@ -35,4 +35,4 @@ requirements = []
 source = "github"
 
 [etags]
-"cardano-miners/fortuna@main" = [{ secs_since_epoch = 1727607054, nanos_since_epoch = 267057442 }, "db29f4bf58935f924be7869f24d4c015835f634d4d6e5f13f5e735fdd1e83d64"]
+"cardano-miners/fortuna@main" = [{ secs_since_epoch = 1727616529, nanos_since_epoch = 233279000 }, "db29f4bf58935f924be7869f24d4c015835f634d4d6e5f13f5e735fdd1e83d64"]

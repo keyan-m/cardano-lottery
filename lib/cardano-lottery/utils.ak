@@ -15,6 +15,15 @@ pub fn get_single_asset_from_value(v: Value) -> (PolicyId, AssetName, Int) {
   triplet
 }
 
+// This functions assumes the "first" asset is ADA.
+pub fn get_single_asset_from_value_apart_from_ada(
+  v: Value,
+) -> (PolicyId, AssetName, Int) {
+  // Exactly two assets are expected.
+  expect [_, triplet] = v |> assets.flatten
+  triplet
+}
+
 pub fn validate_mint_labels(
   triplet0: (PolicyId, AssetName, Int),
   triplet1: (PolicyId, AssetName, Int),
