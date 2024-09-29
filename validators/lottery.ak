@@ -1,5 +1,6 @@
+use aiken/cbor
 use aiken/collection/list
-use aiken/crypto.{VerificationKeyHash}
+use aiken/crypto.{VerificationKeyHash, sha2_256}
 use cardano/address.{Script}
 use cardano/assets.{PolicyId}
 use cardano/transaction.{
@@ -23,8 +24,8 @@ pub type Lottery {
     agent: PubKeyHash,
     commission: Int,
     fortuna_hash: ByteArray,
-    collected_tickets_so_far: ByteArray,
     // MPF root
+    collected_tickets_so_far: ByteArray,
     next_ticket: ByteArray,
   }
   Reward { winner_ticket: ByteArray }
@@ -33,16 +34,16 @@ pub type Lottery {
 pub type SpendAction {
   AppendTicket
   StartFold { lottery_info_input_index: Int }
-  ContinueFold { fold_progress_input_index: Int, next_ticket_input_index: Int}
+  ContinueFold { fold_progress_input_index: Int, next_ticket_input_index: Int }
   CollectPrize
 }
 
 pub type MintAction {
-  Initiate
-  MintTicket
+  Initiate { spent_utxo: OutputReference }
+  MintTicket { covering_ticket_input_index: Int }
 }
 
-validator lottery(ref_utxo: OutputReference) {
+validator lottery {
   mint(action: MintAction, own_policy: PolicyId, tx: Transaction) {
     let Transaction { extra_signatories, inputs, outputs, mint, .. } = tx
 
@@ -51,16 +52,21 @@ validator lottery(ref_utxo: OutputReference) {
     let (_, mint_name, mint_quantity) = mint_triplet
 
     when action is {
-      Initiate -> {
-        // To enforce a single initiation, the specified UTxO must be spent.
+      Initiate { spent_utxo } -> {
+        // {{{
+        // To enforce uniqueness of lottery ID, specified UTxO must be spent.
         expect
-          list.any(inputs, fn(input) { input.output_reference == ref_utxo })?
+          list.any(inputs, fn(input) { input.output_reference == spent_utxo })?
 
-        // Only a single, nameless token must be minted.
-        expect (mint_name == #"")?
+        let lottery_id = spent_utxo |> cbor.serialise |> sha2_256
+
+        // Only a single NFT must be minted, such that its name equals hash of
+        // the spent UTxO's output reference.
+        expect (mint_name == lottery_id)?
         expect (mint_quantity == 1)?
 
-        // Only one UTxO must be produced at the script address.
+        // First produced UTxO must be at the script address, containing the
+        // minted NFT.
         let own_script = Script(own_policy)
         expect [
           Output {
@@ -74,10 +80,12 @@ validator lottery(ref_utxo: OutputReference) {
             fn(output) { output.address.payment_credential == own_script },
           )
 
-        // Linked list must be empty at initiation.
+        // The datum must contain all information of the lottery. `agent` is
+        // free to set them as desired.
         expect Info { agent, .. }: Lottery = lottery_info_datum_data
 
-        // List head UTxO must contain only one other asset apart from Lovelaces.
+        // List head (i.e. lottery info) UTxO must contain only one other asset
+        // apart from Lovelaces.
         let lottery_info_beacon =
           utils.get_single_asset_from_value(lottery_info_value)
 
@@ -88,7 +96,19 @@ validator lottery(ref_utxo: OutputReference) {
           list.any(extra_signatories, fn(vkh) { vkh == agent }),
         }?
       }
-      MintTicket -> False
+      // }}}
+      MintTicket { covering_ticket_input_index } -> {
+        expect Some(Input {
+          output: Output {
+            address: covering_ticket_address,
+            value: covering_ticket_value,
+            datum: InlineDatum(covering_ticket_datum_data),
+            ..
+          },
+          ..
+        }) = list.at(inputs, covering_ticket_input_index)
+        todo
+      }
     }
   }
 
