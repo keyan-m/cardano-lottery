@@ -8,7 +8,8 @@ randomness of the proof-of-work token, [Fortuna](https://minefortuna.com/).
 1. An "agent" starts a lottery, specifying a few values:
    - A time range for capturing Fortuna block hashes
    - A commission percentage (of the total pool) to cover the transaction costs
-   - Ticket price
+     (this'll be on top of all the ADA)
+   - Ticket price in $TUNA
 
    This'll produce a linked list head, and also sends an authentication NFT to
    the agent
@@ -27,11 +28,16 @@ randomness of the proof-of-work token, [Fortuna](https://minefortuna.com/).
 5. After the time window, anyone will be able to fold the linked list,
    accumulating all the funds, and also all ticket IDs in
    a [Merkle Patricia Forestry](https://github.com/aiken-lang/merkle-patricia-forestry) (incentivized
-   entities are the agent and winner(s), as they are determined at this point)
+   entities are the agent and winner(s), as they are known at this point)
 
-6. The final fold must pay the agent's commission and have all the winners
-   specified (this'll be done by modding captured Fortuna hashes by the total
-   number of participants in order to find winners' indices)
+6. The final fold must have all the winners specified (this'll be done by
+   modding captured Fortuna hashes by the total number of participants in order
+   to find winners' indices)
 
-7. After all winners are paid, Merkle root of remaining unburnt tickets is
-   preserved so that participants can burn their tickets if they wanted to
+7. After all winners are paid, the agent gets to collect his/her commission
+
+8. Merkle root of remaining unburnt tickets is preserved so that participants
+   can burn their tickets if they wanted to
+
+While an agent is probably not required, it is implemented here so that all the
+Fortuna contributors can be rewarded for their works.

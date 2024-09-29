@@ -31,14 +31,15 @@ pub type Lottery {
     collected_tickets_so_far: MerkleRoot,
     next_ticket: ByteArray,
   }
-  // Result of the last fold (no need to preserve agent and commision info, as
-  // they must be paid in the last fold tx)
+  // Result of the last fold
   Reward {
     winner_tickets: List<ByteArray>,
-    unburnt_tickets: MerkleRoot
+    unburnt_tickets: MerkleRoot,
+    commission: Int,
   }
   // Holding on to the list of minted NFTs so that users can burn their expired
-  // tickets
+  // tickets (reaching this point means agent's commission and all rewards are
+  // paid)
   Concluded {
     unburnt_tickets: MerkleRoot
   }
@@ -49,7 +50,7 @@ pub type SpendAction {
   StartFold { lottery_info_input_index: Int, fortuna_reference_input_index: Int }
   AddFortunaHash { folding_input_index: Int, fortuna_reference_input_index: Int }
   ContinueFold { fold_progress_input_index: Int, next_ticket_input_index: Int }
-  CollectPrize
+  PayReward { reward_input_index: Int }
   RemoveTicket
 }
 
