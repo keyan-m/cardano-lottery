@@ -1,7 +1,7 @@
 # Cardano Lottery
 
-A decentralized and trust-less lottery contract on Cardano, leveraging the
-randomness of the proof-of-work token, [Fortuna](https://minefortuna.com/).
+A decentralized and trust-less lottery contract on Cardano, leveraging
+randomness from the proof-of-work token, [Fortuna](https://minefortuna.com/).
 
 ## How does it work?
 
@@ -14,10 +14,10 @@ randomness of the proof-of-work token, [Fortuna](https://minefortuna.com/).
    This'll produce a linked list head, and also sends an authentication NFT to
    the agent
 
-2. Participants buy tickets, having them recorded in the linked list, and
-   getting a corresponding NFT themselves (CIP-68 for now), where token names
-   are derived from a specified spent UTxO (CIP-67 labels plus Blake2b-224
-   digest of the serialized output reference)
+2. Any time before the time window, participants buy one or more tickets, having
+   them recorded in the linked list, and getting a corresponding NFT themselves
+   (CIP-68), where token names are derived from the list's spent UTxO (CIP-67
+   labels plus Blake2b-224 digest of the serialized output reference)
 
 3. During the specified time window, anyone can update the list head to capture
    a Fortuna block hash
